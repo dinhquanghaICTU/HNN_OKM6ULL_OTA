@@ -25,7 +25,9 @@
 #define JSMN_H
 
 
-#include "tl_common.h"
+#include <stddef.h>   /* size_t */
+#include <stdio.h>    /* sprintf */
+#include <string.h>   /* memcmp, strlen */
 
 #ifdef __cplusplus
 extern "C" {
