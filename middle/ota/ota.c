@@ -2,11 +2,25 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <fcntl.h>
+
+
 #include "ota.h"
 #include "jsmn.h"
 
 #define APP_PATH  "/usr/bin/mqtt_led_app"
 #define APP_TMP   "/tmp/mqtt_led_app_new"
+#define VERSION_FILE "/etc/app_version"
+
+
+static int write_text_file(const char *path, const char *value)
+{
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0) { perror(path); return -1; }
+    write(fd, value, strlen(value));
+    close(fd);
+    return 0;
+}
 
 static void ota_update_app(const char *version, const char *url)
 {
@@ -14,19 +28,19 @@ static void ota_update_app(const char *version, const char *url)
 
     printf("OTA: update request version=%s\n", version);
     printf("OTA: downloading from %s\n", url);
+    fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "wget -q --no-check-certificate -O %s \"%s\"",
+        "wget --no-check-certificate -q -O %s \"%s\"",
         APP_TMP, url);
-
     if (system(shell_cmd) != 0) {
-        printf("OTA: download failed!\n");
+        printf("OTA: wget failed!\n");
         return;
     }
 
-    snprintf(shell_cmd, sizeof(shell_cmd), "[ -s %s ]", APP_TMP);
+    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_TMP);
     if (system(shell_cmd) != 0) {
-        printf("OTA: file empty!\n");
+        printf("OTA: downloaded file is empty! abort\n");
         return;
     }
 
@@ -35,10 +49,20 @@ static void ota_update_app(const char *version, const char *url)
         APP_TMP, APP_TMP, APP_PATH);
     system(shell_cmd);
 
-    printf("OTA: updated to %s, restarting...\n", version);
+    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_PATH);
+    if (system(shell_cmd) != 0) {
+        printf("OTA: replace failed! abort\n");
+        return;
+    }
+
+    write_text_file(VERSION_FILE, version);
+
+    printf("OTA: binary replaced OK, version=%s\n", version);
+    printf("OTA: restarting app...\n");
     fflush(stdout);
+
     sleep(1);
-    system("killall mqtt_led_app");
+    system("killall -9 mqtt_led_app");
 }
 
 void ota_handle_json(const char *json)
