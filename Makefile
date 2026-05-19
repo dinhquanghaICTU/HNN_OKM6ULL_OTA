@@ -7,8 +7,14 @@ CC      = arm-poky-linux-gnueabi-gcc
 CFLAGS  = -march=armv7ve -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a7 \
           --sysroot=/opt/fsl-imx-x11/4.1.15-2.0.0/sysroots/cortexa7hf-neon-poky-linux-gnueabi
 
+LDFLAGS = -Lthird_party/mosquitto \
+          -lmosquitto \
+          -lpthread \
+          -Wl,-rpath,/usr/lib
+
 # Tự động source toolchain
 export PATH := /opt/fsl-imx-x11/4.1.15-2.0.0/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi:$(PATH)
+
 # =========================================================
 # Project
 # =========================================================
@@ -17,20 +23,19 @@ BINDIR  = build
 
 SRCS    = src/main.c \
           hardware/led/led.c \
-		  hardware/button/button.c \
+          hardware/button/button.c \
           middle/mqtt/mqtt.c \
           middle/ota/ota.c \
-          third_party/jsmn/jsmn.c \
-          third_party/lib_button/app_btn.c
+          third_party/jsmn/jsmn.c
 
 OBJS    = $(patsubst %.c, $(BINDIR)/%.o, $(SRCS))
 
-
 CFLAGS += -Ihardware \
+          -Iconfig \
           -Imiddle/mqtt \
           -Imiddle/ota \
           -Ithird_party/jsmn \
-          -Ithird_party/lib_button \
+          -Ithird_party/mosquitto \
           -Wall -Wextra
 
 # =========================================================
@@ -41,16 +46,15 @@ all: $(BINDIR) $(BINDIR)/$(TARGET)
 $(BINDIR):
 	mkdir -p $(BINDIR) \
 	         $(BINDIR)/src \
-			 $(BINDIR)/config \
+	         $(BINDIR)/config \
 	         $(BINDIR)/hardware/led \
-			 $(BINDIR)/hardware/button \
+	         $(BINDIR)/hardware/button \
 	         $(BINDIR)/middle/mqtt \
 	         $(BINDIR)/middle/ota \
-	         $(BINDIR)/third_party/jsmn \
-	         $(BINDIR)/third_party/lib_button
+	         $(BINDIR)/third_party/jsmn
 
 $(BINDIR)/$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 	@echo "[OK] Built: $@"
 
 $(BINDIR)/%.o: %.c
