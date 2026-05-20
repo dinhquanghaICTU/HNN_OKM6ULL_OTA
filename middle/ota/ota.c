@@ -61,7 +61,11 @@ static const char *slot_rootfs_dev(char slot)
 static void ota_reboot_now(void)
 {
     run_cmd("sync");
+    run_cmd("sleep 1");
     run_cmd("echo b > /proc/sysrq-trigger");
+
+    while (1)
+        sleep(1000);
 }
 
 static int write_text_file(const char *path, const char *value)
@@ -128,7 +132,14 @@ static void ota_update_kernel(const char *version, const char *url)
     run_cmd("sync");
     run_cmd("umount " BOOT_MOUNT);
 
-    snprintf(shell_cmd, sizeof(shell_cmd), "fw_setenv boot_slot %c", inactive);
+    snprintf(shell_cmd, sizeof(shell_cmd),
+         "fw_setenv rollback_slot %c",
+         get_current_slot());
+    run_cmd(shell_cmd);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+            "fw_setenv boot_slot %c",
+            inactive);
     run_cmd(shell_cmd);
 
     run_cmd("fw_setenv upgrade_available 1");
@@ -207,12 +218,19 @@ static void ota_update_rootfs(const char *version, const char *url)
     run_cmd("sync");
     run_cmd("umount " ROOT_MOUNT);
 
-    snprintf(shell_cmd, sizeof(shell_cmd), "fw_setenv boot_slot %c", inactive);
+    snprintf(shell_cmd, sizeof(shell_cmd),
+         "fw_setenv rollback_slot %c",
+         get_current_slot());
+    run_cmd(shell_cmd);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+            "fw_setenv boot_slot %c",
+            inactive);
     run_cmd(shell_cmd);
 
     run_cmd("fw_setenv upgrade_available 1");
     run_cmd("fw_setenv bootcount 0");
-
+    
     write_text_file(VERSION_FILE, version);
 
     printf("OTA rootfs: updated inactive slot %c OK\n", inactive);
