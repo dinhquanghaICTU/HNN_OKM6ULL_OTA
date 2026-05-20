@@ -37,7 +37,7 @@ int main(void)
     btn_handle_t btn;
 
    
-    led_turn_off();
+    led_blink();
 
     
     btn_init(&btn, BTN_MODE_EVENT, "/dev/input/event0", on_button_event);

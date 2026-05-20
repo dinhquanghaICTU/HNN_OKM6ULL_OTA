@@ -36,22 +36,33 @@ static void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
 static void on_message(struct mosquitto *mosq, void *obj,
                        const struct mosquitto_message *msg)
 {
-    (void)mosq; (void)obj;
+    (void)mosq; 
+    (void)obj;
 
-    char cmd[256] = {0};
-    int  len      = msg->payloadlen < (int)sizeof(cmd) - 1
-                  ? msg->payloadlen : (int)sizeof(cmd) - 1;
+    char cmd[1024] = {0};
+
+    if (!msg || !msg->payload || msg->payloadlen <= 0) {
+        printf("MQTT: empty message\n");
+        return;
+    }
+
+    int len = msg->payloadlen;
+
+    if (len >= (int)sizeof(cmd)) {
+        len = sizeof(cmd) - 1;
+        printf("MQTT: payload too long, truncated to %d bytes\n", len);
+    }
 
     memcpy(cmd, msg->payload, len);
     cmd[len] = '\0';
 
     printf("MQTT [%s]: %s\n", msg->topic, cmd);
 
-
     if (cmd[0] == '{') {
         ota_handle_json(cmd);
         return;
     }
+
     if      (!strcmp(cmd, "on")     || !strcmp(cmd, "led on"))     led_turn_on();
     else if (!strcmp(cmd, "off")    || !strcmp(cmd, "led off"))    led_turn_off();
     else if (!strcmp(cmd, "toggle") || !strcmp(cmd, "led toggle")) led_toggle();

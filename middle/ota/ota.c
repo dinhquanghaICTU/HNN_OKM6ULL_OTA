@@ -4,6 +4,8 @@
 
 #include <fcntl.h>
 
+#include <stdlib.h>
+
 
 #include "ota.h"
 #include "jsmn.h"
@@ -12,6 +14,55 @@
 #define APP_TMP   "/tmp/mqtt_led_app_new"
 #define VERSION_FILE "/etc/app_version"
 
+#define BOOT_MOUNT "/mnt/boot"
+#define ROOT_MOUNT "/mnt/rootfs_update"
+
+static int run_cmd(const char *cmd)
+{
+    printf("RUN: %s\n", cmd);
+    fflush(stdout);
+    return system(cmd);
+}
+
+static char get_current_slot(void)
+{
+    FILE *fp;
+    char buf[512];
+
+    fp = fopen("/proc/cmdline", "r");
+    if (!fp) return 'A';
+
+    if (!fgets(buf, sizeof(buf), fp)) {
+        fclose(fp);
+        return 'A';
+    }
+
+    fclose(fp);
+
+    if (strstr(buf, "ota.slot=B")) return 'B';
+    return 'A';
+}
+
+static char get_inactive_slot(void)
+{
+    return get_current_slot() == 'A' ? 'B' : 'A';
+}
+
+static const char *slot_kernel_path(char slot)
+{
+    return slot == 'B' ? BOOT_MOUNT "/zImage_B" : BOOT_MOUNT "/zImage_A";
+}
+
+static const char *slot_rootfs_dev(char slot)
+{
+    return slot == 'B' ? "/dev/mmcblk1p3" : "/dev/mmcblk1p2";
+}
+
+static void ota_reboot_now(void)
+{
+    run_cmd("sync");
+    run_cmd("echo b > /proc/sysrq-trigger");
+}
 
 static int write_text_file(const char *path, const char *value)
 {
@@ -20,6 +71,153 @@ static int write_text_file(const char *path, const char *value)
     write(fd, value, strlen(value));
     close(fd);
     return 0;
+}
+
+static void ota_update_kernel(const char *version, const char *url)
+{
+    char shell_cmd[512];
+    char inactive = get_inactive_slot();
+    const char *kernel_target = slot_kernel_path(inactive);
+
+    #define KERNEL_TMP "/tmp/zImage_new"
+
+    printf("OTA kernel A/B: current=%c inactive=%c version=%s\n",
+           get_current_slot(), inactive, version);
+    printf("OTA kernel: downloading from %s\n", url);
+    fflush(stdout);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "wget --no-check-certificate -q -O %s \"%s\"",
+        KERNEL_TMP, url);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA kernel: wget failed\n");
+        return;
+    }
+
+    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", KERNEL_TMP);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA kernel: downloaded file empty\n");
+        return;
+    }
+
+    run_cmd("mkdir -p " BOOT_MOUNT);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "mount | grep -q ' " BOOT_MOUNT " ' || mount /dev/mmcblk1p1 " BOOT_MOUNT);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA kernel: mount boot failed\n");
+        return;
+    }
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "cp %s %s",
+        KERNEL_TMP, kernel_target);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA kernel: copy to inactive slot failed\n");
+        run_cmd("umount " BOOT_MOUNT);
+        return;
+    }
+
+    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", kernel_target);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA kernel: target invalid\n");
+        run_cmd("umount " BOOT_MOUNT);
+        return;
+    }
+
+    run_cmd("sync");
+    run_cmd("umount " BOOT_MOUNT);
+
+    snprintf(shell_cmd, sizeof(shell_cmd), "fw_setenv boot_slot %c", inactive);
+    run_cmd(shell_cmd);
+
+    run_cmd("fw_setenv upgrade_available 1");
+    run_cmd("fw_setenv bootcount 0");
+
+    write_text_file(VERSION_FILE, version);
+
+    printf("OTA kernel: updated inactive slot %c OK\n", inactive);
+    sleep(3);
+    ota_reboot_now();
+}
+
+static void ota_update_rootfs(const char *version, const char *url)
+{
+    char shell_cmd[512];
+    char inactive = get_inactive_slot();
+    const char *rootfs_dev = slot_rootfs_dev(inactive);
+
+    #define ROOTFS_TMP "/tmp/rootfs_update.tar.gz"
+
+    printf("OTA rootfs A/B: current=%c inactive=%c version=%s\n",
+           get_current_slot(), inactive, version);
+    printf("OTA rootfs: downloading from %s\n", url);
+    fflush(stdout);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "wget --no-check-certificate -q -O %s \"%s\"",
+        ROOTFS_TMP, url);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA rootfs: wget failed\n");
+        return;
+    }
+
+    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", ROOTFS_TMP);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA rootfs: file empty\n");
+        return;
+    }
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "tar -tzf %s > /dev/null 2>&1", ROOTFS_TMP);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA rootfs: invalid tar.gz\n");
+        return;
+    }
+
+    run_cmd("mkdir -p " ROOT_MOUNT);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "umount %s 2>/dev/null || true", rootfs_dev);
+    run_cmd(shell_cmd);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "mkfs.ext4 -F %s", rootfs_dev);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA rootfs: mkfs failed\n");
+        return;
+    }
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "mount %s " ROOT_MOUNT, rootfs_dev);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA rootfs: mount inactive rootfs failed\n");
+        return;
+    }
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "tar --numeric-owner -xzf %s -C " ROOT_MOUNT,
+        ROOTFS_TMP);
+    if (run_cmd(shell_cmd) != 0) {
+        printf("OTA rootfs: extract failed\n");
+        run_cmd("umount " ROOT_MOUNT);
+        return;
+    }
+
+    run_cmd("sync");
+    run_cmd("umount " ROOT_MOUNT);
+
+    snprintf(shell_cmd, sizeof(shell_cmd), "fw_setenv boot_slot %c", inactive);
+    run_cmd(shell_cmd);
+
+    run_cmd("fw_setenv upgrade_available 1");
+    run_cmd("fw_setenv bootcount 0");
+
+    write_text_file(VERSION_FILE, version);
+
+    printf("OTA rootfs: updated inactive slot %c OK\n", inactive);
+    sleep(3);
+    ota_reboot_now();
 }
 
 static void ota_update_app(const char *version, const char *url)
@@ -92,8 +290,18 @@ void ota_handle_json(const char *json)
 
     if (strcmp(cmd, "ota") != 0) return;
 
-    if (strcmp(type, "app") == 0)
+    if (strcmp(type, "app") == 0){
         ota_update_app(version, url);
+    }
+    else if(strcmp(type, "kernel") == 0) 
+    {
+        ota_update_kernel(version,url);    
+    }
+    else if (strcmp(type, "rootfs") == 0) {          
+        ota_update_rootfs(version, url);
+    }
     else
+    {
         printf("OTA: unknown type [%s]\n", type);
+    }   
 }
