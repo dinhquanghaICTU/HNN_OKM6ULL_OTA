@@ -79,7 +79,7 @@ static int write_text_file(const char *path, const char *value)
 
 static void ota_update_kernel(const char *version, const char *url)
 {
-    char shell_cmd[512];
+    char shell_cmd[1024];
     char inactive = get_inactive_slot();
     const char *kernel_target = slot_kernel_path(inactive);
 
@@ -158,7 +158,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     char inactive = get_inactive_slot();
     const char *rootfs_dev = slot_rootfs_dev(inactive);
 
-    #define ROOTFS_TMP "/tmp/rootfs_update.tar.gz"
+    #define ROOTFS_TMP "/tmp/rootfs_update.tar.bz2"
 
     printf("OTA rootfs A/B: current=%c inactive=%c version=%s\n",
            get_current_slot(), inactive, version);
@@ -180,7 +180,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     }
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "tar -tzf %s > /dev/null 2>&1", ROOTFS_TMP);
+        "tar -tjf %s > /dev/null 2>&1", ROOTFS_TMP);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: invalid tar.gz\n");
         return;
@@ -207,7 +207,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     }
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "tar --numeric-owner -xzf %s -C " ROOT_MOUNT,
+        "tar --numeric-owner -xjf %s -C " ROOT_MOUNT,
         ROOTFS_TMP);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: extract failed\n");
@@ -290,7 +290,7 @@ void ota_handle_json(const char *json)
     char cmd[32]     = {0};
     char type[32]    = {0};
     char version[32] = {0};
-    char url[256]    = {0};
+    char url[512] = {0};
 
     jsmn_init(&parser);
     r = jsmn_parse(&parser, json, strlen(json), tokens, 32);
