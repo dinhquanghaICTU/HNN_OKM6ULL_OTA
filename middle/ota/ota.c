@@ -91,7 +91,7 @@ static void ota_update_kernel(const char *version, const char *url)
     fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "wget --no-check-certificate -q -O %s \"%s\"",
+       "wget --no-check-certificate --progress=bar:force -O %s \"%s\"",
         KERNEL_TMP, url);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA kernel: wget failed\n");
@@ -154,7 +154,7 @@ static void ota_update_kernel(const char *version, const char *url)
 
 static void ota_update_rootfs(const char *version, const char *url)
 {
-    char shell_cmd[512];
+    char shell_cmd[1024];
     char inactive = get_inactive_slot();
     const char *rootfs_dev = slot_rootfs_dev(inactive);
 
@@ -166,7 +166,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "wget --no-check-certificate -q -O %s \"%s\"",
+       "wget --no-check-certificate -O %s \"%s\"",
         ROOTFS_TMP, url);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: wget failed\n");
@@ -182,7 +182,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     snprintf(shell_cmd, sizeof(shell_cmd),
         "tar -tjf %s > /dev/null 2>&1", ROOTFS_TMP);
     if (run_cmd(shell_cmd) != 0) {
-        printf("OTA rootfs: invalid tar.gz\n");
+        printf("OTA rootfs: invalid tar.bz2\n");
         return;
     }
 
@@ -193,7 +193,8 @@ static void ota_update_rootfs(const char *version, const char *url)
     run_cmd(shell_cmd);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "mkfs.ext4 -F %s", rootfs_dev);
+        "(mkfs.ext4 -F %s || mke2fs -t ext4 -F %s)",
+        rootfs_dev, rootfs_dev);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: mkfs failed\n");
         return;
@@ -230,7 +231,7 @@ static void ota_update_rootfs(const char *version, const char *url)
 
     run_cmd("fw_setenv upgrade_available 1");
     run_cmd("fw_setenv bootcount 0");
-    
+
     write_text_file(VERSION_FILE, version);
 
     printf("OTA rootfs: updated inactive slot %c OK\n", inactive);
@@ -240,15 +241,15 @@ static void ota_update_rootfs(const char *version, const char *url)
 
 static void ota_update_app(const char *version, const char *url)
 {
-    char shell_cmd[512];
+    char shell_cmd[1024];
 
     printf("OTA: update request version=%s\n", version);
     printf("OTA: downloading from %s\n", url);
     fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "wget --no-check-certificate -q -O %s \"%s\"",
-        APP_TMP, url);
+        "wget -O %s \"%s\"",APP_TMP, url);
+        
     if (system(shell_cmd) != 0) {
         printf("OTA: wget failed!\n");
         return;
