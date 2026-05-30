@@ -72,9 +72,7 @@ static void on_message(struct mosquitto *mosq, void *obj,
     fflush(stdout);
 }
 
-/* =========================================================
- * Public
- * =========================================================*/
+
 void mqtt_task(void)
 {
     struct mosquitto *mosq;
