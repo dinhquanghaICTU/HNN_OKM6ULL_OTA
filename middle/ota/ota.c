@@ -174,7 +174,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     char inactive = get_inactive_slot();
     const char *rootfs_dev = slot_rootfs_dev(inactive);
 
-    #define ROOTFS_TMP "/tmp/rootfs_update.tar.bz2"
+    #define ROOTFS_TMP "/tmp/rootfs_update.tar.zst"
 
     printf("OTA rootfs A/B: current=%c inactive=%c version=%s\n",
            get_current_slot(), inactive, version);
@@ -182,7 +182,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-       "wget --no-check-certificate -O %s \"%s\"",
+        "wget -T 120 -O %s \"%s\"",
         ROOTFS_TMP, url);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: wget failed\n");
@@ -196,9 +196,9 @@ static void ota_update_rootfs(const char *version, const char *url)
     }
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "tar -tjf %s > /dev/null 2>&1", ROOTFS_TMP);
+        "zstd -t %s", ROOTFS_TMP);
     if (run_cmd(shell_cmd) != 0) {
-        printf("OTA rootfs: invalid tar.bz2\n");
+        printf("OTA rootfs: invalid tar.zst\n");
         return;
     }
 
@@ -224,7 +224,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     }
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "tar --numeric-owner -xjf %s -C " ROOT_MOUNT,
+        "zstd -dc %s | tar --numeric-owner -xf - -C " ROOT_MOUNT,
         ROOTFS_TMP);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: extract failed\n");
