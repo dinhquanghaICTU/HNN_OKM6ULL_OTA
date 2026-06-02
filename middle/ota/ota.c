@@ -39,8 +39,13 @@ static char get_current_slot(void)
 
     fclose(fp);
 
-    if (strstr(buf, "ota.slot=B")) return 'B';
-    return 'A';
+    if (strstr(buf, "ota.slot=B")){
+        return 'B';
+    }
+    else {
+        return 'A';
+    } 
+    
 }
 
 static char get_inactive_slot(void)
@@ -255,31 +260,35 @@ static void ota_update_app(const char *version, const char *url)
         return;
     }
 
-    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_TMP);
-    if (system(shell_cmd) != 0) {
-        printf("OTA: downloaded file is empty! abort\n");
-        return;
-    }
+    printf("fix bug nhet app moi \r\n");
+    
+    
 
-    snprintf(shell_cmd, sizeof(shell_cmd),
-        "chmod +x %s && mv %s %s",
-        APP_TMP, APP_TMP, APP_PATH);
-    system(shell_cmd);
+    // snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_TMP);
+    // if (system(shell_cmd) != 0) {
+    //     printf("OTA: downloaded file is empty! abort\n");
+    //     return;
+    // }
 
-    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_PATH);
-    if (system(shell_cmd) != 0) {
-        printf("OTA: replace failed! abort\n");
-        return;
-    }
+    // snprintf(shell_cmd, sizeof(shell_cmd),
+    //     "chmod +x %s && mv %s %s",
+    //     APP_TMP, APP_TMP, APP_PATH);
+    // system(shell_cmd);
 
-    write_text_file(VERSION_FILE, version);
+    // snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_PATH);
+    // if (system(shell_cmd) != 0) {
+    //     printf("OTA: replace failed! abort\n");
+    //     return;
+    // }
 
-    printf("OTA: binary replaced OK, version=%s\n", version);
-    printf("OTA: restarting app...\n");
-    fflush(stdout);
+    // write_text_file(VERSION_FILE, version);
 
-    sleep(1);
-    system("killall -9 mqtt_led_app");
+    // printf("OTA: binary replaced OK, version=%s\n", version);
+    // printf("OTA: restarting app...\n");
+    // fflush(stdout);
+
+    // sleep(1);
+    // system("killall -9 mqtt_led_app");
 }
 
 void ota_handle_json(const char *json)
