@@ -302,13 +302,7 @@ static void ota_update_app(const char *version, const char *url)
     printf("OTA: downloading from %s\n", url);
     fflush(stdout);
 
-    snprintf(shell_cmd, sizeof(shell_cmd),
-        "wget -O %s \"%s\"",APP_TMP, url);
-        
-    if (system(shell_cmd) != 0) {
-        printf("OTA: wget failed!\n");
-        return;
-    }
+
 
     if (checkdir("DIR_BACKUP")== -1)
     {
@@ -339,6 +333,15 @@ static void ota_update_app(const char *version, const char *url)
         fflush(stdout);
     }
 
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "wget -O %s \"%s\"",APP_TMP, url);
+        
+    if (system(shell_cmd) != 0) {
+        printf("OTA: wget failed!\n");
+        return;
+    }
+
+    
     snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_TMP);
     if (system(shell_cmd) != 0) {
         printf("OTA: downloaded file is empty! abort\n");
