@@ -90,9 +90,9 @@ static void ota_update_kernel(const char *version, const char *url)
     printf("OTA kernel: downloading from %s\n", url);
     fflush(stdout);
 
-    snprintf(shell_cmd, sizeof(shell_cmd),
-       "wget --no-check-certificate --progress=bar:force -O %s \"%s\"",
-        KERNEL_TMP, url);
+    // snprintf(shell_cmd, sizeof(shell_cmd),
+    //    "wget --no-check-certificate --progress=bar:force -O %s \"%s\"",
+    //     KERNEL_TMP, url);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA kernel: wget failed\n");
         return;
