@@ -275,6 +275,23 @@ static create_dir(const char *path){
     return 0;
 }
 
+int backup_app(void){
+
+    int ret;
+
+    ret = system("mkdir -p /usr/bin/appB && "
+                 "cp /usr/bin/mqtt_led_app /usr/bin/appB/mqtt_led_app && "
+                 "chmod 0755 /usr/bin/appB/mqtt_led_app && "
+                 "sync");
+
+    if (ret != 0) {
+        printf("backup app to appB failed\n");
+        return -1;
+    }
+
+    return 0;
+}
+
 static void ota_update_app(const char *version, const char *url)
 {
     char shell_cmd[1024];
@@ -291,22 +308,35 @@ static void ota_update_app(const char *version, const char *url)
         return;
     }
 
-    printf("fix bug nhet app moi \r\n");
-
     if (checkdir("/usr/bin/appB")== -1)
     {
         printf("Loi thu muc\r\n");
+        fflush(stdout);
 
     } 
     else if (checkdir("/usr/bin/appB")== 1)
     {
         printf("thu muc da ton tai\r\n");
+        fflush(stdout);
     }
     else{
         printf("tao thu muc moi /usr/bin/appB \r\n");
+        fflush(stdout);
         create_dir("/usr/bin/appB");
         printf("tao thu muc moi /usr/bin/appB thanh cong \r\n");
+        fflush(stdout);
     }
+
+    int ret = backup_app();
+    
+    if(ret == -1){
+        printf("loi khi backup \r\n");
+        fflush(stdout);
+    }else{
+        printf("backup thanh cong \r\n");
+        fflush(stdout);
+    }
+
     
     
 
