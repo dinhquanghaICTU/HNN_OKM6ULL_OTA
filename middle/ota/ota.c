@@ -17,6 +17,8 @@
 #define BOOT_MOUNT "/mnt/boot"
 #define ROOT_MOUNT "/mnt/rootfs_update"
 
+#define DIR_BACKUP "/usr/bin/appB"
+
 static int run_cmd(const char *cmd)
 {
     printf("RUN: %s\n", cmd);
@@ -308,13 +310,13 @@ static void ota_update_app(const char *version, const char *url)
         return;
     }
 
-    if (checkdir("/usr/bin/appB")== -1)
+    if (checkdir("DIR_BACKUP")== -1)
     {
         printf("Loi thu muc\r\n");
         fflush(stdout);
 
     } 
-    else if (checkdir("/usr/bin/appB")== 1)
+    else if (checkdir("DIR_BACKUP")== 1)
     {
         printf("thu muc da ton tai\r\n");
         fflush(stdout);
@@ -322,7 +324,7 @@ static void ota_update_app(const char *version, const char *url)
     else{
         printf("tao thu muc moi /usr/bin/appB \r\n");
         fflush(stdout);
-        create_dir("/usr/bin/appB");
+        create_dir(DIR_BACKUP);
         printf("tao thu muc moi /usr/bin/appB thanh cong \r\n");
         fflush(stdout);
     }
@@ -337,34 +339,31 @@ static void ota_update_app(const char *version, const char *url)
         fflush(stdout);
     }
 
-    
-    
+    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_TMP);
+    if (system(shell_cmd) != 0) {
+        printf("OTA: downloaded file is empty! abort\n");
+        return;
+    }
 
-    // snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_TMP);
-    // if (system(shell_cmd) != 0) {
-    //     printf("OTA: downloaded file is empty! abort\n");
-    //     return;
-    // }
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "chmod +x %s && mv %s %s",
+        APP_TMP, APP_TMP, APP_PATH);
+    system(shell_cmd);
 
-    // snprintf(shell_cmd, sizeof(shell_cmd),
-    //     "chmod +x %s && mv %s %s",
-    //     APP_TMP, APP_TMP, APP_PATH);
-    // system(shell_cmd);
+    snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_PATH);
+    if (system(shell_cmd) != 0) {
+        printf("OTA: replace failed! abort\n");
+        return;
+    }
 
-    // snprintf(shell_cmd, sizeof(shell_cmd), "test -s %s", APP_PATH);
-    // if (system(shell_cmd) != 0) {
-    //     printf("OTA: replace failed! abort\n");
-    //     return;
-    // }
+    write_text_file(VERSION_FILE, version);
 
-    // write_text_file(VERSION_FILE, version);
+    printf("OTA: binary replaced OK, version=%s\n", version);
+    printf("OTA: restarting app...\n");
+    fflush(stdout);
 
-    // printf("OTA: binary replaced OK, version=%s\n", version);
-    // printf("OTA: restarting app...\n");
-    // fflush(stdout);
-
-    // sleep(1);
-    // system("killall -9 mqtt_led_app");
+    sleep(1);
+    system("killall -9 mqtt_led_app");
 }
 
 void ota_handle_json(const char *json)
