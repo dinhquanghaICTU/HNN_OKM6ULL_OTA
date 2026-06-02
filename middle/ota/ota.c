@@ -248,11 +248,12 @@ static void ota_update_rootfs(const char *version, const char *url)
     run_cmd("fw_setenv upgrade_available 1");
     run_cmd("fw_setenv bootcount 0");
     run_cmd("fw_setenv bootlimit 3");
+    run_cmd("fw_setenv ota_try 0");
 
-snprintf(shell_cmd, sizeof(shell_cmd),
-         "fw_setenv altbootcmd 'echo OTA rollback; setenv boot_slot %c; setenv upgrade_available 0; setenv bootcount 0; setenv bootlimit; saveenv; reset'",
-         get_current_slot());
-run_cmd(shell_cmd);
+    snprintf(shell_cmd, sizeof(shell_cmd),
+             "fw_setenv altbootcmd 'echo OTA rollback; setenv boot_slot %c; setenv upgrade_available 0; setenv bootcount 0; setenv bootlimit; setenv ota_try 0; saveenv; reset'",
+             get_current_slot());
+    run_cmd(shell_cmd);
 
     write_text_file(VERSION_FILE, version);
 
