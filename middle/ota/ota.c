@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include <fcntl.h>
-
+#include <sys/stat.h>
 #include <stdlib.h>
 
 
@@ -80,6 +80,15 @@ static int write_text_file(const char *path, const char *value)
     write(fd, value, strlen(value));
     close(fd);
     return 0;
+}
+
+static int checkdir(const char *path){
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        return 0;
+    }
+
+    return S_ISDIR(st.st_mode);
 }
 
 static void ota_update_kernel(const char *version, const char *url)
@@ -244,6 +253,28 @@ static void ota_update_rootfs(const char *version, const char *url)
     ota_reboot_now();
 }
 
+
+static create_dir(const char *path){
+
+    struct stat st;
+
+    if (stat(path, &st) == 0) {
+        if (S_ISDIR(st.st_mode)) {
+            return 0;
+        }
+
+        printf("%s exists but is not a directory\n", path);
+        return -1;
+    }
+
+    if (mkdir(path, 0755) != 0) {
+        perror("mkdir");
+        return -1;
+    }
+
+    return 0;
+}
+
 static void ota_update_app(const char *version, const char *url)
 {
     char shell_cmd[1024];
@@ -261,6 +292,21 @@ static void ota_update_app(const char *version, const char *url)
     }
 
     printf("fix bug nhet app moi \r\n");
+
+    if (checkdir("/usr/bin/appB")== -1)
+    {
+        printf("Loi thu muc\r\n");
+
+    } 
+    else if (checkdir("/usr/bin/appB")== 1)
+    {
+        printf("thu muc da ton tai\r\n");
+    }
+    else{
+        printf("tao thu muc moi /usr/bin/appB \r\n");
+        create_dir("/usr/bin/appB");
+        printf("tao thu muc moi /usr/bin/appB thanh cong \r\n");
+    }
     
     
 
