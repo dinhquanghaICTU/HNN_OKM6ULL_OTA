@@ -35,11 +35,7 @@ int main(void)
     pthread_t   tid_mqtt;
     pthread_t   tid_button;
     btn_handle_t btn;
-
-   
-    led_blink();
-
-    
+ 
     btn_init(&btn, BTN_MODE_EVENT, "/dev/input/event0", on_button_event);
 
     
