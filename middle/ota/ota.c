@@ -333,6 +333,14 @@ static void ota_update_app(const char *version, const char *url)
         fflush(stdout);
     }
 
+
+
+    run_cmd("mkdir -p /var/lib/ota");
+    write_text_file("/var/lib/ota/upgrade_available", "1\n");
+    write_text_file("/var/lib/ota/app_try_count", "0\n");
+    write_text_file("/var/lib/ota/pending_app", "app\n");
+    write_text_file("/var/lib/ota/rollback_app", "appB\n"); 
+
     snprintf(shell_cmd, sizeof(shell_cmd),
         "wget -O %s \"%s\"",APP_TMP, url);
         
