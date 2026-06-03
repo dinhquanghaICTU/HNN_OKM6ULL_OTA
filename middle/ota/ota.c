@@ -26,33 +26,52 @@ static int run_cmd(const char *cmd)
     return system(cmd);
 }
 
-static char get_current_slot(void)
+static char get_cmdline_slot(const char *key)
 {
     FILE *fp;
     char buf[512];
+    char *p;
 
     fp = fopen("/proc/cmdline", "r");
-    if (!fp) return 'A';
+    if (!fp) return 0;
 
     if (!fgets(buf, sizeof(buf), fp)) {
         fclose(fp);
-        return 'A';
+        return 0;
     }
 
     fclose(fp);
 
-    if (strstr(buf, "ota.slot=B")){
-        return 'B';
-    }
-    else {
-        return 'A';
-    } 
-    
+    p = strstr(buf, key);
+    if (!p) return 0;
+
+    p += strlen(key);
+    if (*p == 'A' || *p == 'B') return *p;
+
+    return 0;
 }
 
-static char get_inactive_slot(void)
+static char get_current_slot(void)
 {
-    return get_current_slot() == 'A' ? 'B' : 'A';
+    char slot = get_cmdline_slot("ota.slot=");
+    return slot ? slot : 'A';
+}
+
+static char get_current_kernel_slot(void)
+{
+    char slot = get_cmdline_slot("ota.kernel_slot=");
+    return slot ? slot : get_current_slot();
+}
+
+static char get_current_rootfs_slot(void)
+{
+    char slot = get_cmdline_slot("ota.rootfs_slot=");
+    return slot ? slot : get_current_slot();
+}
+
+static char get_inactive_slot(char current)
+{
+    return current == 'A' ? 'B' : 'A';
 }
 
 static const char *slot_kernel_path(char slot)
@@ -96,13 +115,15 @@ static int checkdir(const char *path){
 static void ota_update_kernel(const char *version, const char *url)
 {
     char shell_cmd[1024];
-    char current = get_current_slot();
-    const char *kernel_target = slot_kernel_path(current);
+    char current = get_current_kernel_slot();
+    char inactive = get_inactive_slot(current);
+    const char *kernel_target = slot_kernel_path(inactive);
 
 #define KERNEL_TMP "/tmp/zImage_new"
 
-    printf("OTA kernel A/B: current=%c version=%s\n", current, version);
-    printf("OTA kernel: target current slot %c\n", current);
+    printf("OTA kernel A/B: current=%c inactive=%c version=%s\n",
+           current, inactive, version);
+    printf("OTA kernel: target inactive kernel slot %c\n", inactive);
     printf("OTA kernel: downloading from %s\n", url);
     fflush(stdout);
 
@@ -133,7 +154,7 @@ static void ota_update_kernel(const char *version, const char *url)
         "cp %s %s",
         KERNEL_TMP, kernel_target);
     if (run_cmd(shell_cmd) != 0) {
-        printf("OTA kernel: copy to current slot failed\n");
+        printf("OTA kernel: copy to inactive slot failed\n");
         run_cmd("umount " BOOT_MOUNT);
         return;
     }
@@ -148,13 +169,24 @@ static void ota_update_kernel(const char *version, const char *url)
     run_cmd("sync");
     run_cmd("umount " BOOT_MOUNT);
 
-    run_cmd("fw_setenv upgrade_available 0");
+    snprintf(shell_cmd, sizeof(shell_cmd),
+         "fw_setenv kernel_rollback_slot %c",
+         current);
+    run_cmd(shell_cmd);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+            "fw_setenv kernel_slot %c",
+            inactive);
+    run_cmd(shell_cmd);
+
+    run_cmd("fw_setenv upgrade_available 1");
     run_cmd("fw_setenv bootcount 0");
+    run_cmd("fw_setenv bootlimit 3");
     run_cmd("fw_setenv ota_try 0");
 
     write_text_file(VERSION_FILE, version);
 
-    printf("OTA kernel: updated current slot %c OK\n", current);
+    printf("OTA kernel: updated inactive slot %c OK\n", inactive);
     sleep(3);
     ota_reboot_now();
 }
@@ -162,13 +194,14 @@ static void ota_update_kernel(const char *version, const char *url)
 static void ota_update_rootfs(const char *version, const char *url)
 {
     char shell_cmd[1024];
-    char inactive = get_inactive_slot();
+    char current = get_current_rootfs_slot();
+    char inactive = get_inactive_slot(current);
     const char *rootfs_dev = slot_rootfs_dev(inactive);
 
     #define ROOTFS_TMP "/tmp/rootfs_update.tar.zst"
 
     printf("OTA rootfs A/B: current=%c inactive=%c version=%s\n",
-           get_current_slot(), inactive, version);
+           current, inactive, version);
     printf("OTA rootfs: downloading from %s\n", url);
     fflush(stdout);
 
@@ -228,8 +261,13 @@ static void ota_update_rootfs(const char *version, const char *url)
     run_cmd("umount " ROOT_MOUNT);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-         "fw_setenv rollback_slot %c",
-         get_current_slot());
+         "fw_setenv rootfs_rollback_slot %c",
+         current);
+    run_cmd(shell_cmd);
+
+    snprintf(shell_cmd, sizeof(shell_cmd),
+            "fw_setenv rootfs_slot %c",
+            inactive);
     run_cmd(shell_cmd);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
@@ -241,11 +279,6 @@ static void ota_update_rootfs(const char *version, const char *url)
     run_cmd("fw_setenv bootcount 0");
     run_cmd("fw_setenv bootlimit 3");
     run_cmd("fw_setenv ota_try 0");
-
-    snprintf(shell_cmd, sizeof(shell_cmd),
-             "fw_setenv altbootcmd 'echo OTA rollback; setenv boot_slot %c; setenv upgrade_available 0; setenv bootcount 0; setenv bootlimit; setenv ota_try 0; saveenv; reset'",
-             get_current_slot());
-    run_cmd(shell_cmd);
 
     write_text_file(VERSION_FILE, version);
 
