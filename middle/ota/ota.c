@@ -179,11 +179,11 @@ static void ota_update_rootfs(const char *version, const char *url)
     printf("OTA rootfs: downloading from %s\n", url);
     fflush(stdout);
 
-    snprintf(shell_cmd, sizeof(shell_cmd),
-    "curl -fLsS --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
-    ROOTFS_TMP, url);
-
-    printf("RUN: %s\n", shell_cmd);
+    printf("OTA rootfs: downloading\n");
+    printf("OTA rootfs:   url    = %s\n", url);
+    printf("OTA rootfs:   output = %s\n", ROOTFS_TMP);
+    printf("OTA rootfs:   cmd    = curl -fLsS --connect-timeout 10 ...\n");
+    printf("OTA rootfs:   target = %s\n", ROOTFS_TMP);
     fflush(stdout);
     
 
