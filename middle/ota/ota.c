@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-
-
 #include "ota.h"
 #include "jsmn.h"
 
@@ -185,6 +182,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     snprintf(shell_cmd, sizeof(shell_cmd),
         "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
         ROOTFS_TMP, url);
+    fflush(stdout);
 
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: wget failed\n");
@@ -341,8 +339,6 @@ static void ota_update_app(const char *version, const char *url)
         printf("backup thanh cong \r\n");
         fflush(stdout);
     }
-
-
 
     run_cmd("mkdir -p /var/lib/ota");
     write_text_file("/var/lib/ota/upgrade_available", "1\n");
