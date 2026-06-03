@@ -180,9 +180,12 @@ static void ota_update_rootfs(const char *version, const char *url)
     fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
-        ROOTFS_TMP, url);
+    "curl -fLsS --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
+    ROOTFS_TMP, url);
+
+    printf("RUN: %s\n", shell_cmd);
     fflush(stdout);
+    
 
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: wget failed\n");
