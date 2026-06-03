@@ -182,8 +182,22 @@ static void ota_update_rootfs(const char *version, const char *url)
     printf("OTA rootfs: downloading\n");
     printf("OTA rootfs:   url    = %s\n", url);
     printf("OTA rootfs:   output = %s\n", ROOTFS_TMP);
-    printf("OTA rootfs:   cmd    = curl -fLsS --connect-timeout 10 ...\n");
-    printf("OTA rootfs:   target = %s\n", ROOTFS_TMP);
+    fflush(stdout);
+
+    char *cmd;
+    if (asprintf(&cmd,
+        "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 "
+        "--retry-connrefused --max-time 600 "
+        "--progress-bar -o %s \"%s\" 2>&1",
+        ROOTFS_TMP, url) < 0) {
+        printf("OTA rootfs: asprintf failed\n");
+        return -1;
+    }
+    
+    int ret = system(cmd);
+    free(cmd);
+
+    printf("OTA rootfs: curl exit=%d\n", ret);
     fflush(stdout);
     
 
