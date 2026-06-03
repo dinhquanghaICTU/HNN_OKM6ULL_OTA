@@ -107,8 +107,9 @@ static void ota_update_kernel(const char *version, const char *url)
     fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-         "wget -O %s \"%s\"",
-         KERNEL_TMP, url);
+        "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
+            KERNEL_TMP, url);
+
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA kernel: wget failed\n");
         return;
@@ -182,8 +183,9 @@ static void ota_update_rootfs(const char *version, const char *url)
     fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "wget -T 120 -O %s \"%s\"",
+        "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
         ROOTFS_TMP, url);
+
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: wget failed\n");
         return;
@@ -349,7 +351,8 @@ static void ota_update_app(const char *version, const char *url)
     write_text_file("/var/lib/ota/rollback_app", "appB\n"); 
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "wget -O %s \"%s\"",APP_TMP, url);
+        "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
+        APP_TMP, url);
         
     if (system(shell_cmd) != 0) {
         printf("OTA: wget failed!\n");
