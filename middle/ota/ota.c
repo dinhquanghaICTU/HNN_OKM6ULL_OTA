@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+
+
 #include "ota.h"
 #include "jsmn.h"
 
@@ -104,9 +107,8 @@ static void ota_update_kernel(const char *version, const char *url)
     fflush(stdout);
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
-            KERNEL_TMP, url);
-
+         "wget -O %s \"%s\"",
+         KERNEL_TMP, url);
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA kernel: wget failed\n");
         return;
@@ -179,28 +181,10 @@ static void ota_update_rootfs(const char *version, const char *url)
     printf("OTA rootfs: downloading from %s\n", url);
     fflush(stdout);
 
-    printf("OTA rootfs: downloading\n");
-    printf("OTA rootfs:   url    = %s\n", url);
-    printf("OTA rootfs:   output = %s\n", ROOTFS_TMP);
-    fflush(stdout);
-
-    char *cmd;
-    if (asprintf(&cmd,
-        "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 "
-        "--retry-connrefused --max-time 600 "
-        "--progress-bar -o %s \"%s\" 2>&1",
-        ROOTFS_TMP, url) < 0) {
-        printf("OTA rootfs: asprintf failed\n");
-        return -1;
-    }
-    
-    int ret = system(cmd);
-    free(cmd);
-
-    printf("OTA rootfs: curl exit=%d\n", ret);
-    fflush(stdout);
-    
-
+    snprintf(shell_cmd, sizeof(shell_cmd),
+        "wget -T 120 -O %s \"%s\"",
+        ROOTFS_TMP, url);
+        
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: wget failed\n");
         return;
@@ -357,6 +341,8 @@ static void ota_update_app(const char *version, const char *url)
         fflush(stdout);
     }
 
+
+
     run_cmd("mkdir -p /var/lib/ota");
     write_text_file("/var/lib/ota/upgrade_available", "1\n");
     write_text_file("/var/lib/ota/app_try_count", "0\n");
@@ -364,8 +350,7 @@ static void ota_update_app(const char *version, const char *url)
     write_text_file("/var/lib/ota/rollback_app", "appB\n"); 
 
     snprintf(shell_cmd, sizeof(shell_cmd),
-        "curl -fL --connect-timeout 10 --retry 5 --retry-delay 2 --retry-connrefused --max-time 600 -o %s \"%s\"",
-        APP_TMP, url);
+        "wget -O %s \"%s\"",APP_TMP, url);
         
     if (system(shell_cmd) != 0) {
         printf("OTA: wget failed!\n");
