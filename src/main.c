@@ -38,8 +38,6 @@ int main(void)
  
     btn_init(&btn, BTN_MODE_EVENT, "/dev/input/event0", on_button_event);
 
-
-    
     pthread_create(&tid_mqtt,   NULL, thread_mqtt,   NULL);
     pthread_create(&tid_button, NULL, thread_button, &btn);
 

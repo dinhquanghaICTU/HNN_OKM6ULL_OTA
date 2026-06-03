@@ -96,13 +96,13 @@ static int checkdir(const char *path){
 static void ota_update_kernel(const char *version, const char *url)
 {
     char shell_cmd[1024];
-    char inactive = get_inactive_slot();
-    const char *kernel_target = slot_kernel_path(inactive);
+    char current = get_current_slot();
+    const char *kernel_target = slot_kernel_path(current);
 
-    #define KERNEL_TMP "/tmp/zImage_new"
+#define KERNEL_TMP "/tmp/zImage_new"
 
-    printf("OTA kernel A/B: current=%c inactive=%c version=%s\n",
-           get_current_slot(), inactive, version);
+    printf("OTA kernel A/B: current=%c version=%s\n", current, version);
+    printf("OTA kernel: target current slot %c\n", current);
     printf("OTA kernel: downloading from %s\n", url);
     fflush(stdout);
 
@@ -133,7 +133,7 @@ static void ota_update_kernel(const char *version, const char *url)
         "cp %s %s",
         KERNEL_TMP, kernel_target);
     if (run_cmd(shell_cmd) != 0) {
-        printf("OTA kernel: copy to inactive slot failed\n");
+        printf("OTA kernel: copy to current slot failed\n");
         run_cmd("umount " BOOT_MOUNT);
         return;
     }
@@ -148,22 +148,13 @@ static void ota_update_kernel(const char *version, const char *url)
     run_cmd("sync");
     run_cmd("umount " BOOT_MOUNT);
 
-    snprintf(shell_cmd, sizeof(shell_cmd),
-         "fw_setenv rollback_slot %c",
-         get_current_slot());
-    run_cmd(shell_cmd);
-
-    snprintf(shell_cmd, sizeof(shell_cmd),
-            "fw_setenv boot_slot %c",
-            inactive);
-    run_cmd(shell_cmd);
-
-    run_cmd("fw_setenv upgrade_available 1");
+    run_cmd("fw_setenv upgrade_available 0");
     run_cmd("fw_setenv bootcount 0");
+    run_cmd("fw_setenv ota_try 0");
 
     write_text_file(VERSION_FILE, version);
 
-    printf("OTA kernel: updated inactive slot %c OK\n", inactive);
+    printf("OTA kernel: updated current slot %c OK\n", current);
     sleep(3);
     ota_reboot_now();
 }
@@ -184,7 +175,7 @@ static void ota_update_rootfs(const char *version, const char *url)
     snprintf(shell_cmd, sizeof(shell_cmd),
         "wget -T 120 -O %s \"%s\"",
         ROOTFS_TMP, url);
-        
+
     if (run_cmd(shell_cmd) != 0) {
         printf("OTA rootfs: wget failed\n");
         return;
