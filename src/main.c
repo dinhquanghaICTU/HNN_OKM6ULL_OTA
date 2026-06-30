@@ -41,7 +41,7 @@ int main(void)
     pthread_create(&tid_mqtt,   NULL, thread_mqtt,   NULL);
     pthread_create(&tid_button, NULL, thread_button, &btn);
 
-    led_blink();
+    // led_blink();
    
     pthread_join(tid_mqtt,   NULL);
     pthread_join(tid_button, NULL);
