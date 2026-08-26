@@ -1,22 +1,26 @@
 # =========================================================
-# Toolchain
+# Compiler & Flags
 # =========================================================
-TOOLCHAIN = /opt/fsl-imx-x11/4.1.15-2.0.0/environment-setup-cortexa7hf-neon-poky-linux-gnueabi
+CC ?= arm-linux-gnueabihf-gcc
 
-CC      = arm-poky-linux-gnueabi-gcc
-CFLAGS  = -march=armv7ve -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a7 \
-          --sysroot=/opt/fsl-imx-x11/4.1.15-2.0.0/sysroots/cortexa7hf-neon-poky-linux-gnueabi
+SYSROOT_DIR ?= $(wildcard ./recipe-sysroot)
+ifneq ($(SYSROOT_DIR),)
+    SYSROOT_FLAGS = --sysroot=$(SYSROOT_DIR) -I$(SYSROOT_DIR)/usr/include -L$(SYSROOT_DIR)/usr/lib
+endif
 
-LDFLAGS = -Lthird_party/mosquitto \
-          -lmosquitto \
-          -lpthread \
-          -Wl,-rpath,/usr/lib
+CFLAGS  += -march=armv7-a -mfpu=neon -mfloat-abi=hard \
+           -Ihardware \
+           -Iconfig \
+           -Imiddle/mqtt \
+           -Imiddle/ota \
+           -Ithird_party/jsmn \
+           $(SYSROOT_FLAGS) \
+           -Wall -Wextra
 
-# Tự động source toolchain
-export PATH := /opt/fsl-imx-x11/4.1.15-2.0.0/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi:$(PATH)
+LDFLAGS += -lmosquitto -lpthread
 
 # =========================================================
-# Project
+# Project Output & Sources
 # =========================================================
 TARGET  = mqtt_led_app
 BINDIR  = build
@@ -30,22 +34,13 @@ SRCS    = src/main.c \
 
 OBJS    = $(patsubst %.c, $(BINDIR)/%.o, $(SRCS))
 
-CFLAGS += -Ihardware \
-          -Iconfig \
-          -Imiddle/mqtt \
-          -Imiddle/ota \
-          -Ithird_party/jsmn \
-          -Ithird_party/mosquitto \
-          -Wall -Wextra
-
 # =========================================================
 # Rules
 # =========================================================
 all: $(BINDIR) $(BINDIR)/$(TARGET)
 
 $(BINDIR):
-	mkdir -p $(BINDIR) \
-	         $(BINDIR)/src \
+	mkdir -p $(BINDIR)/src \
 	         $(BINDIR)/config \
 	         $(BINDIR)/hardware/led \
 	         $(BINDIR)/hardware/button \
@@ -55,7 +50,9 @@ $(BINDIR):
 
 $(BINDIR)/$(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
-	@echo "[OK] Built: $@"
+	@echo "========================================="
+	@echo "[OK] Biên dịch thành công: $@"
+	@echo "========================================="
 
 $(BINDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
