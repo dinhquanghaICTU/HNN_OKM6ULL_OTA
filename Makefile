@@ -1,23 +1,23 @@
 # =========================================================
 # Compiler & Flags
 # =========================================================
-CC ?= arm-linux-gnueabihf-gcc
+CC = arm-linux-gnueabihf-gcc
 
 SYSROOT_DIR ?= $(wildcard ./recipe-sysroot)
 ifneq ($(SYSROOT_DIR),)
     SYSROOT_FLAGS = --sysroot=$(SYSROOT_DIR) -I$(SYSROOT_DIR)/usr/include -L$(SYSROOT_DIR)/usr/lib
 endif
 
-CFLAGS  += -march=armv7-a -mfpu=neon -mfloat-abi=hard \
-           -Ihardware \
-           -Iconfig \
-           -Imiddle/mqtt \
-           -Imiddle/ota \
-           -Ithird_party/jsmn \
-           $(SYSROOT_FLAGS) \
-           -Wall -Wextra
+CFLAGS  = -march=armv7-a -mfpu=neon -mfloat-abi=hard \
+          -Ihardware \
+          -Iconfig \
+          -Imiddle/mqtt \
+          -Imiddle/ota \
+          -Ithird_party/jsmn \
+          $(SYSROOT_FLAGS) \
+          -Wall -Wextra
 
-LDFLAGS += -lmosquitto -lpthread
+LDFLAGS = -lmosquitto -lpthread
 
 # =========================================================
 # Project Output & Sources

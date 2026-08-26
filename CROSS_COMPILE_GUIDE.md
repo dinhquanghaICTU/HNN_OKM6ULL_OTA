@@ -48,7 +48,7 @@ Chỉ cần mở Terminal tại thư mục dự án `HNN_OKM6ULL_OTA` và chạy
 1. Cài đặt trình biên dịch ARM `gcc-arm-linux-gnueabihf` và công cụ `make`.
 2. Tự động tải gói thư viện `sysroot_okm6ull.tar.gz` (47 MB) từ GitHub Release `v1.1`.
 3. Tự động giải nén thư mục `recipe-sysroot` (chứa `mosquitto.h`, `libmosquitto.so`, `glibc`...).
-4. Biên dịch thử nghiệm mã nguồn dự án thành công 100%!
+4. Tạo ví dụ mẫu `examples/mqtt_simple.c` và biên dịch thử nghiệm thành công 100%!
 
 ---
 
@@ -88,9 +88,9 @@ mosquitto_pub -h 192.168.1.214 -t test/topic -m "toggle"
 
 ---
 
-### 2. Biên dịch & Chạy file code mẫu MQTT C (`examples/mqtt_demo.c`)
+### 2. Biên dịch & Chạy file code mẫu MQTT C (`examples/mqtt_simple.c`)
 
-Trong thư mục `examples/` có sẵn file code mẫu độc lập `mqtt_demo.c`.
+Trong thư mục `examples/` có sẵn file code mẫu đơn giản `mqtt_simple.c`.
 
 **Cách biên dịch:**
 ```bash
@@ -98,13 +98,13 @@ arm-linux-gnueabihf-gcc --sysroot=./recipe-sysroot \
     -I./recipe-sysroot/usr/include \
     -L./recipe-sysroot/usr/lib \
     -march=armv7-a -mfpu=neon -mfloat-abi=hard \
-    examples/mqtt_demo.c -o mqtt_demo -lmosquitto -lpthread
+    examples/mqtt_simple.c -o mqtt_simple -lmosquitto -lpthread
 ```
 
 **Bắn sang bo mạch và chạy:**
 ```bash
-scp mqtt_demo root@192.168.1.214:/usr/bin/
-ssh root@192.168.1.214 "/usr/bin/mqtt_demo"
+scp mqtt_simple root@192.168.1.214:/usr/bin/
+ssh root@192.168.1.214 "/usr/bin/mqtt_simple"
 ```
 
 ---
