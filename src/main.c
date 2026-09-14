@@ -3,8 +3,8 @@
 
 #include "button/button.h"
 #include "led/led.h"
-#include "middle/ota/ota.h"
 #include "mqtt.h"
+#include "ota/ota.h"
 
 static void on_button_event(btn_event_t evt) {
   if (evt == BTN_EVT_SHORT_PRESS)
