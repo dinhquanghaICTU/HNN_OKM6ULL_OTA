@@ -307,6 +307,23 @@ int backup_app(void) {
   return 0;
 }
 
+void app_check_ota_done(void) {
+  FILE *f = fopen("/var/lib/ota/upgrade_available", "r");
+  if (f == NULL) {
+    char buf[8] = {0};
+    fgets(buf, sizeof(buf), f);
+    fclose(f);
+
+    // Nếu cờ đang là 1 (bản mới vừa nạp), thì xác nhận thành công và xóa cờ
+    if (buf[0] == '1') {
+      printf(
+          "[OTA] New app validated successfully! Resetting upgrade flags.\n");
+      write_text_file("/var/lib/ota/upgrade_available", "0\n");
+      write_text_file("/var/lib/ota/app_try_count", "0\n");
+    }
+  }
+}
+
 static void ota_update_app(const char *version, const char *url) {
   char shell_cmd[1024];
 
