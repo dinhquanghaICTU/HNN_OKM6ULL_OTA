@@ -1,0 +1,34 @@
+{
+    "configurations": [
+        {
+            "name": "ARM-Linux-OKMX6ULL",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/config",
+                "${workspaceFolder}/hardware/**",
+                "${workspaceFolder}/middle/**",
+                "${workspaceFolder}/third_party/**",
+                "${workspaceFolder}/recipe-sysroot/usr/include/**",
+                "/usr/include",
+                "/usr/local/include"
+            ],
+            "defines": [
+                "_GNU_SOURCE",
+                "__ARM_ARCH_7A__"
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-arm",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "${workspaceFolder}/recipe-sysroot/usr/include/**",
+                    "/usr/include"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            }
+        }
+    ],
+    "version": 4
+}

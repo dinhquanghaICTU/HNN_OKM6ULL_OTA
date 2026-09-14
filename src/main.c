@@ -39,11 +39,16 @@ int main(void)
  
     btn_init(&btn, BTN_MODE_EVENT, "/dev/input/event0", on_button_event);
 
+    /*
+        đoạn này khởi tạo thread để chạy mqtt với button độc lập
+    */
     pthread_create(&tid_mqtt,   NULL, thread_mqtt,   NULL);
     pthread_create(&tid_button, NULL, thread_button, &btn);
 
     
-   
+   /*
+    đoạn này là để join mqtt 
+   */
     pthread_join(tid_mqtt,   NULL);
     pthread_join(tid_button, NULL);
 
