@@ -375,9 +375,9 @@ static void ota_update_app(const char *version, const char *url) {
   fflush(stdout);
 
   sleep(1);
-  system("killall -9 mqtt_led_app");
   sync();
   run_cmd("reboot");
+  system("killall -9 mqtt_led_app");
 }
 
 void ota_handle_json(const char *json) {
