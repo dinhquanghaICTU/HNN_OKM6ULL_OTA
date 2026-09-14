@@ -4,6 +4,7 @@
 #include "button/button.h"
 #include "led/led.h"
 #include "mqtt.h"
+#include "ota.h"
 
 static void on_button_event(btn_event_t evt) {
   if (evt == BTN_EVT_SHORT_PRESS)
@@ -28,6 +29,8 @@ static void *thread_button(void *arg) {
 int main(void) {
   //   led_blink();
   led_turn_on();
+  ota_mark_app_valid();
+
   pthread_t tid_mqtt;
   pthread_t tid_button;
   btn_handle_t btn;
