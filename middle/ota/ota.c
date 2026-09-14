@@ -313,8 +313,6 @@ void app_check_ota_done(void) {
     char buf[8] = {0};
     fgets(buf, sizeof(buf), f);
     fclose(f);
-
-    // Nếu cờ đang là 1 (bản mới vừa nạp), thì xác nhận thành công và xóa cờ
     if (buf[0] == '1') {
       printf(
           "[OTA] New app validated successfully! Resetting upgrade flags.\n");
