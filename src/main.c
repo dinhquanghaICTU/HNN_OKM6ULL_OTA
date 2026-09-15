@@ -29,7 +29,7 @@ static void *thread_button(void *arg) {
 int main(void) {
   // led_blink();
   //   led_turn_on();
-  app_check_ota_done();
+  // app_check_ota_done();
 
   pthread_t tid_mqtt;
   pthread_t tid_button;
@@ -42,6 +42,9 @@ int main(void) {
   */
   pthread_create(&tid_mqtt, NULL, thread_mqtt, NULL);
   pthread_create(&tid_button, NULL, thread_button, &btn);
+
+  sleep(5);
+  app_check_ota_done();
 
   /*
    đoạn này là để join mqtt
