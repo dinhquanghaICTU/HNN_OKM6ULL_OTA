@@ -370,7 +370,7 @@ static void ota_update_app(const char *version, const char *url) {
   run_cmd("mkdir -p /etc/ota");
   write_text_file("/etc/ota/upgrade_available", "1\n");
   write_text_file("/etc/ota/app_try_count", "0\n");
-  sync(); // <-- Bắt buộc có sync() để ghi thẳng xuống eMMC
+  sync();
 
   snprintf(shell_cmd, sizeof(shell_cmd), "wget -O %s \"%s\"", APP_TMP, url);
 
