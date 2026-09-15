@@ -309,19 +309,29 @@ int backup_app(void) {
 
 void app_check_ota_done(void) {
   FILE *f = fopen("/var/lib/ota/upgrade_available", "r");
-  if (f) {
-    char buf[8] = {0};
-    if (fgets(buf, sizeof(buf), f) != NULL) {
-      // Nếu phát hiện cờ đang là 1
-      if (buf[0] == '1') {
-        printf("[OTA] App running OK! Resetting upgrade flag to 0.\n");
-        // GHI SỐ 0 ĐỂ CÁC LẦN BOOT SAU KHÔNG BỊ VÀO IF NỮA
-        write_text_file("/var/lib/ota/upgrade_available", "0\n");
-        write_text_file("/var/lib/ota/app_try_count", "0\n");
-        sync();
-      }
+  if (f == NULL) {
+    return;
+  }
+
+  char buf[16] = {0};
+  char *res = fgets(buf, sizeof(buf), f);
+  fclose(f);
+
+  if (res != NULL && buf[0] == '1') {
+    printf("[OTA] App running OK! Resetting upgrade flag to 0.\n");
+
+    FILE *fw = fopen("/var/lib/ota/upgrade_available", "w");
+    if (fw) {
+      fputs("0\n", fw);
+      fclose(fw);
     }
-    fclose(f);
+    FILE *fc = fopen("/var/lib/ota/app_try_count", "w");
+    if (fc) {
+      fputs("0\n", fc);
+      fclose(fc);
+    }
+
+    sync();
   }
 }
 
