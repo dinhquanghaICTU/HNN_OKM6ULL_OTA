@@ -23,6 +23,7 @@ static void *thread_button(void *arg) {
   btn_handle_t *btn = (btn_handle_t *)arg;
   while (1)
     btn_run(btn);
+  usleep(10000);
   return NULL;
 }
 
