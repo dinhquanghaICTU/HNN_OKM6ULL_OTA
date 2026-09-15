@@ -27,9 +27,9 @@ static void *thread_button(void *arg) {
 }
 
 int main(void) {
-  led_blink();
+  // led_blink();
   //   led_turn_on();
-  app_check_ota_done();
+  // app_check_ota_done();
 
   pthread_t tid_mqtt;
   pthread_t tid_button;
